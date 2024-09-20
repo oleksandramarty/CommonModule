@@ -1,0 +1,15 @@
+/Users/oleksandrmartynin/Documents/GitHub/CommonModule/CommonModule/bin/Debug/net9.0/CommonModule.deps.json
+/Users/oleksandrmartynin/Documents/GitHub/CommonModule/CommonModule/bin/Debug/net9.0/CommonModule.runtimeconfig.json
+/Users/oleksandrmartynin/Documents/GitHub/CommonModule/CommonModule/bin/Debug/net9.0/CommonModule.dll
+/Users/oleksandrmartynin/Documents/GitHub/CommonModule/CommonModule/bin/Debug/net9.0/CommonModule.pdb
+/Users/oleksandrmartynin/Documents/GitHub/CommonModule/CommonModule/obj/Debug/net9.0/CommonModule.csproj.AssemblyReference.cache
+/Users/oleksandrmartynin/Documents/GitHub/CommonModule/CommonModule/obj/Debug/net9.0/CommonModule.GeneratedMSBuildEditorConfig.editorconfig
+/Users/oleksandrmartynin/Documents/GitHub/CommonModule/CommonModule/obj/Debug/net9.0/CommonModule.AssemblyInfoInputs.cache
+/Users/oleksandrmartynin/Documents/GitHub/CommonModule/CommonModule/obj/Debug/net9.0/CommonModule.AssemblyInfo.cs
+/Users/oleksandrmartynin/Documents/GitHub/CommonModule/CommonModule/obj/Debug/net9.0/CommonModule.csproj.CoreCompileInputs.cache
+/Users/oleksandrmartynin/Documents/GitHub/CommonModule/CommonModule/obj/Debug/net9.0/CommonModule.sourcelink.json
+/Users/oleksandrmartynin/Documents/GitHub/CommonModule/CommonModule/obj/Debug/net9.0/CommonModule.dll
+/Users/oleksandrmartynin/Documents/GitHub/CommonModule/CommonModule/obj/Debug/net9.0/refint/CommonModule.dll
+/Users/oleksandrmartynin/Documents/GitHub/CommonModule/CommonModule/obj/Debug/net9.0/CommonModule.pdb
+/Users/oleksandrmartynin/Documents/GitHub/CommonModule/CommonModule/obj/Debug/net9.0/CommonModule.genruntimeconfig.cache
+/Users/oleksandrmartynin/Documents/GitHub/CommonModule/CommonModule/obj/Debug/net9.0/ref/CommonModule.dll

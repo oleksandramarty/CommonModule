@@ -1,7 +1,7 @@
 using System.Security.Claims;
 using CommonModule.Shared.Enums;
 
-namespace CommonModule.Core.Auth;
+namespace CommonModule.Core.Interfaces;
 
 public interface IAuthService
 {

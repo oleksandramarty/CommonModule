@@ -15,4 +15,8 @@ public class ErrorMessages
     public const string Forbidden = "ERROR.FORBIDDEN";
     public const string UserBlocked = "ERROR.USER_BLOCKED";
     public const string PotentialHarmfulContent = "ERROR.POTENTIAL_HARMFUL_CONTENT";
+    public const string JwtMinLength = "ERROR.JWT_MIN_LENGTH";
+    public const string JwtInvalidFormat = "ERROR.JWT_INVALID_FORMAT";
+    public const string JwtUserClaimNotFound = "ERROR.JWT_USER_CLAIM_NOT_FOUND";
+    public const string JwtUserClaimInvalidConversion = "ERROR.JWT_USER_CLAIM_INVALID_CONVERSION";
 }

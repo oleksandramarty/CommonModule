@@ -1,3 +1,5 @@
+using System.Security.Claims;
+
 namespace CommonModule.Core.Auth;
 
 public interface ITokenService
@@ -7,4 +9,5 @@ public interface ITokenService
     Task RemoveTokenAsync(string token);
     Task RemoveUserTokenAsync(Guid userId);
     Task RemoveAllTokensAsync(Guid userId);
+    bool IsTokenExpired(string token);
 }

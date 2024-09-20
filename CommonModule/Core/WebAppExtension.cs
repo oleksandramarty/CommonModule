@@ -1,9 +1,12 @@
 using System.Globalization;
+using Amazon.DynamoDBv2;
+using Amazon.DynamoDBv2.DataModel;
 using AutoMapper;
 using CommonModule.Core.Auth;
 using CommonModule.Core.Extensions;
 using CommonModule.Interfaces;
 using CommonModule.Repositories;
+using CommonModule.Shared.Constants;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -44,7 +47,7 @@ public static class WebAppExtension
         builder.Services.AddScoped<IAuthService, AuthService>();
         builder.Services.AddScoped<IJwtTokenFactory, JwtTokenFactory>();
 
-        builder.Services.AddScoped<ITokenService, TokenService>();
+        builder.Services.AddScoped<ITokenService, DynamoDbTokenService>();
         builder.Services.AddScoped<ILocalizationService, LocalizationService>();
     }
 
@@ -64,66 +67,45 @@ public static class WebAppExtension
             });
     }
 
-public static void AddSwagger(this WebApplicationBuilder builder)
-{
-    string version = builder.Configuration["Microservice:Version"];
-    builder.Services.AddEndpointsApiExplorer();
-    builder.Services.AddSwaggerGen(c =>
+    public static void AddSwagger(this WebApplicationBuilder builder)
     {
-        c.SwaggerDoc(version,
-            new OpenApiInfo { Title = builder.Configuration["Microservice:Title"], Version = version });
-        c.AddSecurityDefinition("JwtHonk", new OpenApiSecurityScheme
+        string version = builder.Configuration["Microservice:Version"];
+        builder.Services.AddEndpointsApiExplorer();
+        builder.Services.AddSwaggerGen(c =>
         {
-            Description = @"JWT Authorization header using the JwtHonk scheme. \r\n\r\n 
-                  Enter 'JwtHonk' [space] and then your token in the text input below.
-                  \r\n\r\nExample: 'JwtHonk 12345abcdef'",
-            Name = "Authorization",
-            In = ParameterLocation.Header,
-            Type = SecuritySchemeType.ApiKey,
-            Scheme = "JwtHonk"
-        });
+            c.SwaggerDoc(version,
+                new OpenApiInfo { Title = builder.Configuration["Microservice:Title"], Version = version });
+            c.AddSecurityDefinition("JwtHonk", new OpenApiSecurityScheme
+            {
+                Description = @"JWT Authorization header using the JwtHonk scheme. \r\n\r\n 
+                      Enter 'JwtHonk' [space] and then your token in the text input below.
+                      \r\n\r\nExample: 'JwtHonk 12345abcdef'",
+                Name = "Authorization",
+                In = ParameterLocation.Header,
+                Type = SecuritySchemeType.ApiKey,
+                Scheme = "JwtHonk"
+            });
 
-        c.AddSecurityRequirement(new OpenApiSecurityRequirement()
-        {
+            c.AddSecurityRequirement(new OpenApiSecurityRequirement()
             {
-                new OpenApiSecurityScheme
                 {
-                    Reference = new OpenApiReference
+                    new OpenApiSecurityScheme
                     {
-                        Type = ReferenceType.SecurityScheme,
-                        Id = "JwtHonk"
+                        Reference = new OpenApiReference
+                        {
+                            Type = ReferenceType.SecurityScheme,
+                            Id = "JwtHonk"
+                        },
+                        Scheme = "oauth2",
+                        Name = "JwtHonk",
+                        In = ParameterLocation.Header,
                     },
-                    Scheme = "oauth2",
-                    Name = "JwtHonk",
-                    In = ParameterLocation.Header,
-                },
-                new List<string>()
-            }
-        });
-        // var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
-        // var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
-        // c.IncludeXmlComments(xmlPath);
-    });
-}
-    public static void AddSwagger(this IApplicationBuilder app, WebApplicationBuilder builder)
-    {
-        app.UseSwagger();
-        app.UseSwaggerUI(c =>
-        {
-            c.SwaggerEndpoint("/swagger/v1/swagger.json", "Your API V1");
-            c.OAuthClientId(builder.Configuration["Authentication:Google:ClientId"]);
-            c.OAuthClientSecret(builder.Configuration["Authentication:Google:ClientSecret"]);
-            c.OAuthUsePkce(); // Use PKCE for enhanced security
-            c.OAuthScopes("openid", "profile", "email");
-            c.OAuthConfigObject = new OAuthConfigObject()
-            {
-                ClientId = builder.Configuration["Authentication:Google:ClientId"],
-                ClientSecret = builder.Configuration["Authentication:Google:ClientSecret"],
-                Realm = "JobPathfinder",
-                AppName = "JobPathfinder",
-                ScopeSeparator = " ",
-                AdditionalQueryStringParams = new Dictionary<string, string> { { "prompt", "consent" } }
-            };
+                    new List<string>()
+                }
+            });
+            // var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+            // var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+            // c.IncludeXmlComments(xmlPath);
         });
     }
 
@@ -175,24 +157,51 @@ public static void AddSwagger(this WebApplicationBuilder builder)
                 };
             });
     }
-
+    
+    public static void AddDynamoDB(this WebApplicationBuilder builder)
+    {
+        var dynamoDbConfig = new AmazonDynamoDBConfig
+        {
+            ServiceURL = builder.Configuration["DynamoDB:ServiceURL"]
+        };
+        
+        builder.Services.AddSingleton<IAmazonDynamoDB>(sp => new AmazonDynamoDBClient(dynamoDbConfig));
+        builder.Services.AddSingleton<IDynamoDBContext, DynamoDBContext>();
+    }
+    
     public static void UseTokenValidator(this IApplicationBuilder app)
     {
-        // TODO DynamoDB token validation
-        // Ensure Swagger UI is available
         app.Use(async (context, next) =>
         {
-            if (context.User.Identity.IsAuthenticated)
+            try
             {
-                var tokenService = context.RequestServices.GetRequiredService<ITokenService>();
-                var token = context.Request.Headers["Authorization"].ToString().Split(' ').Last();
-
-                // TODO add refresh token if needed
-                if (!await tokenService.IsTokenValidAsync(token))
+                if (context.User.Identity.IsAuthenticated)
                 {
-                    context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-                    return;
+                    var tokenService = context.RequestServices.GetRequiredService<ITokenService>();
+                    var token = context.Request.Headers["Authorization"].ToString().Split(' ').Last();
+
+                    if (!await tokenService.IsTokenValidAsync(token))
+                    {
+                        var tokenFactory = context.RequestServices.GetRequiredService<IJwtTokenFactory>();
+
+                        if (tokenService.IsTokenExpired(token) && tokenFactory.IsTokenRefreshable(token))
+                        {
+                            var newToken = tokenFactory.GenerateNewJwtToken(context.User);
+                            context.Response.Headers.Add("Authorization", $"JwtHonk {newToken}");
+                        }
+                        else
+                        {
+                            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                            return;
+                        }
+                    }
                 }
+            }
+            catch (Exception ex)
+            {
+                context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+                await context.Response.WriteAsync(ErrorMessages.InternalServerError);
+                return;
             }
 
             await next();
